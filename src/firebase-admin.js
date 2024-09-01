@@ -1,10 +1,13 @@
-// firebase-admin.js
+const path = require('path');
 const admin = require('firebase-admin');
-const serviceAccount = require('../firebaseServiceAccountKey.json');
+
+const serviceAccount = require(path.resolve(__dirname, '../firebaseServiceAccountKey.json'));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://<your-database-name>.firebaseio.com"
+  databaseURL: 'https://school-payment-system-ff3da-default-rtdb.asia-southeast1.firebasedatabase.app/',
 });
 
-module.exports = admin;
+const db = admin.firestore();
+
+module.exports = db;

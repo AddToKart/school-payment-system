@@ -1,90 +1,163 @@
-// routes/students.js
+// src/routes/students.js
 const express = require('express');
+const db = require('../firebase-admin');
+
 const router = express.Router();
-const admin = require('../firebase-admin');
 
-const db = admin.firestore();
-
-// Get all students by section with their total remaining balance
-router.get('/students/:section', async (req, res) => {
-  const section = req.params.section;
+// Fetch students by section
+router.get('/students/:grade/:strand/:section', async (req, res) => {
   try {
-    const studentsRef = db.collection('students').where('section', '==', section);
-    const snapshot = await studentsRef.get();
+    const { grade, strand, section } = req.params;
+    console.log('Fetching students:', { grade, strand, section });
+
+    const studentsRef = db.collection('students');
+    const snapshot = await studentsRef
+      .where('grade', '==', grade)
+      .where('strand', '==', strand)
+      .where('section', '==', section)
+      .get();
+
     if (snapshot.empty) {
-      return res.status(404).send('No students found');
+      console.log('No students found'); 
+      return res.json([]); // Return an empty array instead of 404
     }
 
-    const students = snapshot.docs.map(doc => {
-      const studentData = doc.data();
-      const totalBalance = studentData.fees
-        .filter(fee => fee.status === 'unpaid')
-        .reduce((total, fee) => total + fee.amount, 0);
-
-      return {
-        id: doc.id,
-        ...studentData,
-        totalBalance // Add total balance to each student
-      };
+    const students = [];
+    snapshot.forEach(doc => {
+      students.push({ id: doc.id, ...doc.data() });
     });
 
-    res.status(200).json(students);
+    console.log('Students fetched:', students);
+    res.json(students);
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error('Error fetching students:', error);
+    res.status(500).send('Error fetching students: ' + error.message);
   }
 });
 
-// Add a new fee to a student
-router.post('/students/:id/fees', async (req, res) => {
-  const studentId = req.params.id;
-  const { description, amount } = req.body;
 
+router.get('/test', (req, res) => {
+  res.send('Test route is working!');
+});
+
+
+// Fetch student balances
+router.get('/students/:id/balances', async (req, res) => {
   try {
-    const studentRef = db.collection('students').doc(studentId);
-    const studentDoc = await studentRef.get();
+    const { id } = req.params;
+    console.log('Fetching balances for student:', id); // Debugging line
 
-    if (!studentDoc.exists) {
-      return res.status(404).send('Student not found');
+    const studentRef = db.collection('students').doc(id);
+    const doc = await studentRef.get();
+
+    if (!doc.exists) {
+      console.log('Student not found'); // Debugging line
+      return res.status(404).send('Student not found.');
     }
 
-    const studentData = studentDoc.data();
-    const newFee = {
-      description,
-      amount,
-      status: 'unpaid'
+    const balances = doc.data().balances || [];
+    const totalBalance = balances
+      .filter(balance => balance.status === 'Unpaid')
+      .reduce((sum, balance) => sum + balance.amount, 0);
+
+    console.log('Balances fetched:', { balances, totalBalance }); // Debugging line
+    res.json({ balances, totalBalance });
+  } catch (error) {
+    console.error('Error fetching balances:', error); // Debugging line
+    res.status(500).send('Error fetching balances: ' + error.message);
+  }
+});
+
+// Update student balances
+router.post('/students/:id/balances', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { updatedBalances } = req.body;
+    console.log('Updating balances for student:', { id, updatedBalances }); // Debugging line
+
+    const studentRef = db.collection('students').doc(id);
+
+    await studentRef.update({
+      balances: updatedBalances,
+    });
+
+    res.send('Balances updated successfully.');
+  } catch (error) {
+    console.error('Error updating balances:', error); // Debugging line
+    res.status(500).send('Error updating balances: ' + error.message);
+  }
+});
+
+// Add new balance
+router.post('/students/:id/balance', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, amount, status } = req.body;
+    console.log('Adding new balance for student:', { id, description, amount, status }); // Debugging line
+
+    const studentRef = db.collection('students').doc(id);
+    const doc = await studentRef.get();
+
+    if (!doc.exists) {
+      console.log('Student not found'); // Debugging line
+      return res.status(404).send('Student not found.');
+    }
+
+    const balances = doc.data().balances || [];
+    balances.push({ description, amount, status });
+
+    await studentRef.update({ balances });
+
+    res.send('New balance added successfully.');
+  } catch (error) {
+    console.error('Error adding new balance:', error); // Debugging line
+    res.status(500).send('Error adding new balance: ' + error.message);
+  }
+});
+
+// Add new student
+router.post('/students', async (req, res) => {
+  try {
+    const { studentNumber, name, grade, strand, section } = req.body;
+    console.log('Adding new student:', { studentNumber, name, grade, strand, section });
+
+    const studentRef = db.collection('students').doc(studentNumber);
+
+    const studentData = {
+      studentNumber,
+      name,
+      grade,
+      strand,
+      section,
+      balances: []
     };
 
-    const updatedFees = [...studentData.fees, newFee];
-    await studentRef.update({ fees: updatedFees });
+    await studentRef.set(studentData);
 
-    res.status(200).send('Fee added successfully');
+    res.status(201).send('Student added successfully.');
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error('Error adding new student:', error);
+    res.status(500).send('Error adding new student: ' + error.message);
   }
 });
 
-// Update the status of a fee (mark as paid)
-router.put('/students/:id/fees/:feeIndex', async (req, res) => {
-  const studentId = req.params.id;
-  const feeIndex = req.params.feeIndex;
-
+router.get('/admins/:id/profile', async (req, res) => {
   try {
-    const studentRef = db.collection('students').doc(studentId);
-    const studentDoc = await studentRef.get();
+    const { id } = req.params;
+    const adminRef = db.collection('admins').doc(id);
+    const doc = await adminRef.get();
 
-    if (!studentDoc.exists) {
-      return res.status(404).send('Student not found');
+    if (!doc.exists) {
+      return res.status(404).send('Admin not found.');
     }
 
-    const studentData = studentDoc.data();
-    studentData.fees[feeIndex].status = 'paid';
-
-    await studentRef.update({ fees: studentData.fees });
-
-    res.status(200).send('Fee status updated successfully');
+    const profileData = doc.data();
+    res.json(profileData);
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).send('Error fetching admin profile: ' + error.message);
   }
 });
+
+
 
 module.exports = router;

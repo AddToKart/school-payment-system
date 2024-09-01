@@ -7,6 +7,11 @@ import AdminDashboard from './components/AdminDashboard';
 import PrivateRoute from './routes/PrivateRoute';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+const authUser = {
+  name: 'John Doe', // Replace with the actual user's name
+  profilePicture: 'path-to-profile-picture.jpg' // Replace with the actual profile picture path or URL
+};
+
 function App() {
   return (
     <Router>
@@ -24,7 +29,7 @@ function App() {
           path="/admin-dashboard"
           element={
             <PrivateRoute role="admin">
-              <AdminDashboard />
+              <AdminDashboard authUser={authUser} onLogout={() => {/* handle logout */}} />
             </PrivateRoute>
           }
         />

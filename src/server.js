@@ -1,17 +1,15 @@
-// server.js
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const admin = require('./firebase-admin');
-
 const studentsRoutes = require('./routes/students');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Routes
+// Mount routes
 app.use('/api', studentsRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('School Payment System Backend');
