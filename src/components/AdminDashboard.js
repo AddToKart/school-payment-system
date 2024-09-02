@@ -1,5 +1,3 @@
-// src/components/AdminDashboard.js
-
 import React, { useState, useEffect } from 'react';
 import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails, deleteStudent } from '../services/adminServices';
 import { Modal, Button, Form, Navbar, Nav } from 'react-bootstrap';
@@ -12,12 +10,11 @@ const AdminDashboard = ({ onLogout }) => {
   const [authUser, setAuthUser] = useState(null);
   const [profile, setProfile] = useState({ name: '', profilePicture: '' });
 
-  // Load initial values from localStorage or default to 'Grade 11', 'STEM', 'Section 1'
   const [grade, setGrade] = useState(localStorage.getItem('selectedGrade') || 'Grade 11');
   const [strand, setStrand] = useState(localStorage.getItem('selectedStrand') || 'STEM');
   const [section, setSection] = useState(localStorage.getItem('selectedSection') || 'Section 1');
 
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState({ unpaid: [], paid: [] });
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [balances, setBalances] = useState([]);
   const [totalBalance, setTotalBalance] = useState(0);
@@ -72,31 +69,30 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
-  // Update localStorage whenever grade, strand, or section changes
   useEffect(() => {
     localStorage.setItem('selectedGrade', grade);
     localStorage.setItem('selectedStrand', strand);
     localStorage.setItem('selectedSection', section);
     fetchStudents(grade, strand, section);
+    setSelectedStudent(null); // Clear selected student when navigating
   }, [grade, strand, section]);
 
   const fetchStudents = async (grade, strand, section) => {
     try {
-        const studentList = await getStudentsBySection(grade, strand, section);
-        if (studentList.length === 0) {
-            console.log(`No students found for ${grade} ${strand} ${section}`);
-            setStudents([]); // Handle empty list
-        } else {
-            studentList.sort((a, b) => a.name.localeCompare(b.name));
-            setStudents(studentList);
-        }
+      const studentList = await getStudentsBySection(grade, strand, section);
+      if (studentList.length === 0) {
+        console.log(`No students found for ${grade} ${strand} ${section}`);
+        setStudents({ unpaid: [], paid: [] });
+      } else {
+        const studentsWithBalance = studentList.filter(student => student.hasOutstandingBalance);
+        const studentsWithoutBalance = studentList.filter(student => !student.hasOutstandingBalance);
+        setStudents({ unpaid: studentsWithBalance, paid: studentsWithoutBalance });
+      }
     } catch (error) {
-        console.error('Error fetching students:', error);
-        setStudents([]); // Ensure UI handles this gracefully
+      console.error('Error fetching students:', error);
+      setStudents({ unpaid: [], paid: [] });
     }
-};
-
-  
+  };
 
   const handleStudentClick = async (student) => {
     try {
@@ -134,11 +130,18 @@ const AdminDashboard = ({ onLogout }) => {
       amount: parseFloat(editAmount),
       status: editStatus
     };
+  
+    if (isNaN(updatedBalances[index].amount)) {
+      console.error('Invalid balance amount');
+      return;
+    }
+  
     try {
       await updateStudentBalance(selectedStudent.id, updatedBalances);
       setBalances(updatedBalances);
       setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
       setEditIndex(null);
+      fetchStudents(grade, strand, section);
     } catch (error) {
       console.error('Error saving balance:', error);
     }
@@ -150,7 +153,12 @@ const AdminDashboard = ({ onLogout }) => {
       amount: parseFloat(newBalanceAmount),
       status: 'Unpaid'
     };
-
+  
+    if (isNaN(newBalance.amount)) {
+      console.error('Invalid balance amount');
+      return;
+    }
+  
     try {
       await addNewBalance(selectedStudent.id, newBalance);
       const updatedBalances = [...balances, newBalance];
@@ -159,6 +167,7 @@ const AdminDashboard = ({ onLogout }) => {
       setNewBalanceDescription('');
       setNewBalanceAmount('');
       setIsAddingBalance(false);
+      fetchStudents(grade, strand, section);
     } catch (error) {
       console.error('Error adding new balance:', error);
     }
@@ -168,16 +177,26 @@ const AdminDashboard = ({ onLogout }) => {
     const newStudent = {
       studentNumber,
       name: studentName,
-      grade: grade,  // Ensure that the state value is passed
-      strand: strand,  // Ensure that the state value is passed
-      section: section,  // Ensure that the state value is passed
+      grade: studentGrade,
+      strand: studentStrand,
+      section: studentSection,
     };
-
-    console.log('Adding student:', newStudent);  // Add logging to verify data
-
+  
     try {
       if (isEditMode && studentId) {
         await updateStudentDetails(studentId, newStudent);
+        // Update the students state with the new section, grade, and strand
+        const updatedStudents = { ...students };
+        const studentIndex = updatedStudents.unpaid.findIndex((student) => student.id === studentId);
+        if (studentIndex !== -1) {
+          updatedStudents.unpaid[studentIndex] = { ...updatedStudents.unpaid[studentIndex], ...newStudent };
+        } else {
+          const studentIndex = updatedStudents.paid.findIndex((student) => student.id === studentId);
+          if (studentIndex !== -1) {
+            updatedStudents.paid[studentIndex] = { ...updatedStudents.paid[studentIndex], ...newStudent };
+          }
+        }
+        setStudents(updatedStudents);
       } else {
         await addStudent(newStudent);
       }
@@ -190,8 +209,8 @@ const AdminDashboard = ({ onLogout }) => {
     } catch (error) {
       console.error('Error adding or updating student:', error);
     }
-};
-  
+  };
+
   const handleEditStudent = (student) => {
     setStudentId(student.id);
     setStudentNumber(student.studentNumber);
@@ -201,17 +220,35 @@ const AdminDashboard = ({ onLogout }) => {
     setStudentSection(student.section);
     setIsEditMode(true);
     setShowAddStudentModal(true);
-  }
+  };
+
+  const openAddStudentModal = () => {
+    setStudentGrade(grade); // Sync with selected grade on the main page
+    setStudentStrand(strand); // Sync with selected strand on the main page
+    setStudentSection(section); // Sync with selected section on the main page
+    setStudentNumber('');
+    setStudentName('');
+    setIsEditMode(false);
+    setShowAddStudentModal(true);
+  };
 
   const handleDeleteStudent = async () => {
     try {
       await deleteStudent(studentId);
       setShowAddStudentModal(false);
       setSelectedStudent(null);
+      setStudentId(null);
+      setStudentNumber('');
+      setStudentName('');
+      setIsEditMode(false);
       fetchStudents(grade, strand, section);
     } catch (error) {
       console.error('Error deleting student:', error);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchStudents(grade, strand, section);
   };
 
   return (
@@ -271,17 +308,23 @@ const AdminDashboard = ({ onLogout }) => {
               ))}
             </select>
           </div>
+          <Button variant="primary" className="mt-3" onClick={openAddStudentModal}>
+            Add New Student
+          </Button>
+          <Button variant="secondary" className="mt-3 ml-2" onClick={handleRefresh}>
+            Refresh
+          </Button>
         </div>
       </div>
 
       <div className="card mt-4">
         <div className="card-body">
-          <h5 className="card-title">Students in {section}, {strand}, {grade}</h5>
+          <h5 className="card-title">Unpaid Students in {section}, {strand}, {grade}</h5>
           <ul className="list-group">
-            {students.map(student => (
+            {students.unpaid.map(student => (
               <li
                 key={student.id}
-                className={`list-group-item ${student.hasOutstandingBalance ? 'list-group-item-danger' : ''}`}
+                className="list-group-item list-group-item-danger"
                 onClick={() => handleStudentClick(student)}
               >
                 {student.name}
@@ -295,9 +338,30 @@ const AdminDashboard = ({ onLogout }) => {
               </li>
             ))}
           </ul>
-          <Button variant="primary" className="mt-3" onClick={() => setShowAddStudentModal(true)}>
-            Add New Student
-          </Button>
+        </div>
+      </div>
+
+      <div className="card mt-4">
+        <div className="card-body">
+          <h5 className="card-title">Paid Students in {section}, {strand}, {grade}</h5>
+          <ul className="list-group">
+            {students.paid.map(student => (
+              <li
+                key={student.id}
+                className="list-group-item"
+                onClick={() => handleStudentClick(student)}
+              >
+                {student.name}
+                <button
+                  className="btn-edit btn-sm"
+                  onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                  style={{ float: 'right', marginLeft: 'auto' }}
+                >
+                  Edit Student
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 

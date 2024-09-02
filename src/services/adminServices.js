@@ -2,9 +2,9 @@ import axios from 'axios';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api';
 
-export const getAdminProfile = async (userId) => {
+export const getAdminProfile = async (userId: string) => {
   try {
     const userDoc = await getDoc(doc(db, "admins", userId));
     return userDoc.exists() ? userDoc.data() : null;
@@ -14,13 +14,12 @@ export const getAdminProfile = async (userId) => {
   }
 };
 
-export const getStudentsBySection = async (grade, strand, section) => {
+export const getStudentsBySection = async (grade: string, strand: string, section: string) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/students/${grade}/${strand}/${section}`);
+    const response = await axios.get(`${apiBaseUrl}/students/${grade}/${strand}/${section}`);
     return response.data;
   } catch (error) {
     if (error.response && error.response.status === 404) {
-      // Return an empty array if no students are found
       return [];
     } else {
       console.error('Error fetching students:', error);
@@ -29,10 +28,9 @@ export const getStudentsBySection = async (grade, strand, section) => {
   }
 };
 
-
-export const getStudentBalances = async (studentId) => {
+export const getStudentBalances = async (studentId: string) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/students/${studentId}/balances`);
+    const response = await axios.get(`${apiBaseUrl}/students/${studentId}/balances`);
     return response.data;
   } catch (error) {
     console.error('Error fetching student balances:', error);
@@ -40,9 +38,9 @@ export const getStudentBalances = async (studentId) => {
   }
 };
 
-export const updateStudentBalance = async (studentId, updatedBalances) => {
+export const updateStudentBalance = async (studentId: string, updatedBalances: any) => {
   try {
-    await axios.post(`${API_BASE_URL}/students/${studentId}/balances`, { updatedBalances });
+    await axios.post(`${apiBaseUrl}/students/${studentId}/balances`, { updatedBalances });
     return true;
   } catch (error) {
     console.error('Error updating student balances:', error);
@@ -50,9 +48,9 @@ export const updateStudentBalance = async (studentId, updatedBalances) => {
   }
 };
 
-export const addNewBalance = async (studentId, newBalance) => {
+export const addNewBalance = async (studentId: string, newBalance: any) => {
   try {
-    await axios.post(`${API_BASE_URL}/students/${studentId}/balance`, newBalance);
+    await axios.post(`${apiBaseUrl}/students/${studentId}/balance`, newBalance);
     return true;
   } catch (error) {
     console.error('Error adding new balance:', error);
@@ -60,9 +58,9 @@ export const addNewBalance = async (studentId, newBalance) => {
   }
 };
 
-export const addStudent = async (newStudent) => {
+export const addStudent = async (newStudent: any) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/students`, newStudent);
+    const response = await axios.post(`${apiBaseUrl}/students`, newStudent);
     return response.data;
   } catch (error) {
     console.error('Error adding student:', error);
@@ -70,18 +68,18 @@ export const addStudent = async (newStudent) => {
   }
 };
 
-export const updateStudentDetails = async (studentId, updatedStudent) => {
+export const updateStudentDetails = async (studentId: string, updatedStudent: any) => {
   try {
-    await axios.put(`${API_BASE_URL}/students/${studentId}`, updatedStudent);
+    await axios.put(`${apiBaseUrl}/students/${studentId}`, updatedStudent);
   } catch (error) {
     console.error('Error updating student:', error);
     throw error;
   }
 };
 
-export const deleteStudent = async (studentId) => {
+export const deleteStudent = async (studentId: string) => {
   try {
-    await axios.delete(`${API_BASE_URL}/students/${studentId}`);
+    await axios.delete(`${apiBaseUrl}/students/${studentId}`);
   } catch (error) {
     console.error('Error deleting student:', error);
     throw error;
