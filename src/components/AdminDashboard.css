@@ -1,20 +1,21 @@
 .admin-dashboard-container {
   padding: 20px;
-  background-color: #e3f2fd; /* Light sky blue background */
+  background-color: #e3f2fd;
   min-height: 100vh;
   font-family: 'Poppins', sans-serif;
 }
 
 h2 {
-  color: #0d47a1; /* Dark blue color */
+  color: #0d47a1;
   margin-bottom: 20px;
+  font-size: 2rem;
 }
 
 .card {
   margin-bottom: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  background-color: #ffffff; /* White card background */
+  background-color: #ffffff;
   border: none;
 }
 
@@ -24,17 +25,18 @@ h2 {
 
 .card-title {
   font-size: 1.5rem;
-  color: #0d47a1; /* Dark blue color */
+  color: #0d47a1;
   margin-bottom: 20px;
 }
 
 .list-group-item {
   cursor: pointer;
   transition: background-color 0.3s ease;
+  font-size: 1rem;
 }
 
 .list-group-item:hover {
-  background-color: #bbdefb; /* Light blue hover effect */
+  background-color: #bbdefb;
 }
 
 .list-group-item-danger {
@@ -45,12 +47,15 @@ h2 {
 .form-control {
   margin-bottom: 10px;
   border-radius: 5px;
-  border-color: #0d47a1; /* Dark blue border */
+  border-color: #0d47a1;
+  font-size: 1rem;
 }
 
 button {
   margin-top: 10px;
   border-radius: 5px;
+  font-size: 1rem;
+  padding: 10px 20px;
 }
 
 .btn-primary {
@@ -83,17 +88,19 @@ button {
 
 .modal-content {
   border-radius: 10px;
+  font-size: 1rem;
 }
 
 .navbar {
   margin-bottom: 20px;
-  background-color: #0d47a1; /* Dark blue navbar */
+  background-color: #0d47a1;
   color: #ffffff;
+  padding: 10px 20px;
 }
 
 .profile-picture {
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   margin-right: 10px;
 }
@@ -107,6 +114,7 @@ button {
   .form-control {
       width: 100%;
       margin-bottom: 10px;
+      font-size: 1.1rem;
   }
 
   .card-body {
@@ -114,6 +122,57 @@ button {
   }
 
   .card-title {
+      font-size: 1.5rem;
+  }
+
+  h2 {
+      font-size: 1.75rem;
+      text-align: center;
+  }
+
+  .navbar {
+      padding: 15px;
+      text-align: center;
+  }
+
+  .profile-picture {
+      width: 35px;
+      height: 35px;
+  }
+
+  button {
+      font-size: 1.1rem;
+      padding: 12px 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard-container {
+      padding: 10px;
+  }
+
+  .card {
+      margin-bottom: 10px;
+  }
+
+  .card-title {
       font-size: 1.25rem;
+  }
+
+  .list-group-item {
+      font-size: 1rem;
+  }
+
+  button {
+      font-size: 1rem;
+      padding: 10px 20px;
+  }
+
+  .navbar {
+      padding: 10px;
+  }
+
+  h2 {
+      font-size: 1.5rem;
   }
 }

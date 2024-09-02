@@ -7,37 +7,57 @@ const router = express.Router();
 // Fetch students by section
 router.get('/students/:grade/:strand/:section', async (req, res) => {
   try {
-    const { grade, strand, section } = req.params;
-    console.log('Fetching students:', { grade, strand, section });
+      const { grade, strand, section } = req.params;
+      console.log('Received request to fetch students for:', { grade, strand, section });
 
-    const studentsRef = db.collection('students');
-    const snapshot = await studentsRef
-      .where('grade', '==', grade)
-      .where('strand', '==', strand)
-      .where('section', '==', section)
-      .get();
+      const studentsRef = db.collection('students');
+      const snapshot = await studentsRef
+          .where('grade', '==', grade)
+          .where('strand', '==', strand)
+          .where('section', '==', section)
+          .get();
 
-    if (snapshot.empty) {
-      console.log('No students found'); 
-      return res.json([]); // Return an empty array instead of 404
-    }
+      if (snapshot.empty) {
+          console.log('No students found for the provided filters');
+          return res.status(404).json({ message: 'No students found' });
+      }
 
-    const students = [];
-    snapshot.forEach(doc => {
-      students.push({ id: doc.id, ...doc.data() });
-    });
+      const students = [];
+      snapshot.forEach(doc => {
+          students.push({ id: doc.id, ...doc.data() });
+      });
 
-    console.log('Students fetched:', students);
-    res.json(students);
+      console.log('Students fetched successfully:', students);
+      res.json(students);
   } catch (error) {
-    console.error('Error fetching students:', error);
-    res.status(500).send('Error fetching students: ' + error.message);
+      console.error('Error while fetching students:', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 
+
+
 router.get('/test', (req, res) => {
   res.send('Test route is working!');
+});
+
+router.post('/api/students', async (req, res) => {
+  try {
+      const { studentNumber, name, grade, strand, section } = req.body;
+
+      if (!studentNumber || !name || !grade || !strand || !section) {
+          return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      const studentRef = db.collection('students').doc();
+      await studentRef.set({ studentNumber, name, grade, strand, section, createdAt: new Date().toISOString() });
+
+      res.status(201).json({ id: studentRef.id, studentNumber, name, grade, strand, section });
+  } catch (error) {
+      console.error('Error adding student:', error);
+      res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 });
 
 
