@@ -133,28 +133,34 @@ router.post('/students/:id/balance', async (req, res) => {
 // Add new student
 router.post('/students', async (req, res) => {
   try {
-    const { studentNumber, name, grade, strand, section } = req.body;
-    console.log('Adding new student:', { studentNumber, name, grade, strand, section });
+      const { studentNumber, name, grade, strand, section } = req.body;
 
-    const studentRef = db.collection('students').doc(studentNumber);
+      if (!studentNumber || !name || !grade || !strand || !section) {
+          return res.status(400).json({ message: 'All fields are required' });
+      }
 
-    const studentData = {
-      studentNumber,
-      name,
-      grade,
-      strand,
-      section,
-      balances: []
-    };
+      console.log('Adding new student:', { studentNumber, name, grade, strand, section });
 
-    await studentRef.set(studentData);
+      const studentRef = db.collection('students').doc(studentNumber);  // Ensure the correct student number is used
 
-    res.status(201).send('Student added successfully.');
+      const studentData = {
+          studentNumber,
+          name,
+          grade,
+          strand,
+          section,
+          balances: []
+      };
+
+      await studentRef.set(studentData);
+
+      res.status(201).send('Student added successfully.');
   } catch (error) {
-    console.error('Error adding new student:', error);
-    res.status(500).send('Error adding new student: ' + error.message);
+      console.error('Error adding new student:', error);
+      res.status(500).send('Error adding new student: ' + error.message);
   }
 });
+
 
 router.get('/admins/:id/profile', async (req, res) => {
   try {

@@ -1,0 +1,69 @@
+can you make a school payment system where students can pay their remaining balance like tuitions, miscellaneous fees, uniform fees and stuffs i also want the students to be segregated by section for example in *Section Name* Grade 11 it will list students with remaining balances and the background of their name will be red and when i click their name i will see all of their remaning balance and i can add some balances to it and remove or edit the main users of these system is Grade 11 and Grade 12 students they will be 2 users for this system one is Students and Administrator who will handle and edit the fees of the system for the user pov i want to have multiple payment gateway mainly Gcash but i don't want to implement this yet i just want a temporary pay button that will process and tell the admin that it is paid and process the receipt i also want the login page will be 2 in 1 the login page can login admin and students based on their email only authenticated account or given account will get login to the admin system and if the account is student based it will direct them to the main page which can see their remaining balance and how to pay it i want to use ReactJS for front end and NodeJS for backend and my database is Firebase and if you can suggest more things or tools i should use to improve my system just recommend it i want to start of in the Login page first and then proceed to the Admin page and the design and add functionallity i don't want to rush things i just want a fully working system that will handle payment this is just a capstone project and not a public application so i don't need a pretty stable system i just want a presentable and working one
+
+1. Setting Up the Project Environment
+Frontend: Use ReactJS.
+Backend: Use NodeJS with Express for handling API requests.
+Database: Use Firebase for authentication, real-time data, and storage.
+2. Login Page
+Design:
+Create a single login page that can authenticate both students and administrators.
+Use Firebase Authentication to manage email-based login.
+Functionality:
+Authenticate the user based on their email and password.
+Redirect administrators to the Admin Dashboard and students to their balance overview page.
+Store user roles in Firebase, e.g., role: "student" or role: "admin".
+Tools:
+React Router for navigation.
+Firebase Authentication for user management.
+3. Admin Dashboard
+Design:
+Display a list of students segregated by section (e.g., Grade 11, Grade 12).
+Highlight students with remaining balances in red.
+Functionality:
+View detailed balances and payment history for each student.
+Add, edit, or remove fees for individual students.
+Process payments and generate receipts.
+Implement CRUD operations on fees and balances using Firebase.
+Tools:
+ReactJS for creating dynamic tables and forms.
+Firebase Firestore for storing and retrieving student data.
+React Context or Redux for state management.
+4. Student Dashboard
+Design:
+Display the student's remaining balance, categorized by fee type (tuition, miscellaneous, etc.).
+Functionality:
+Show a summary of the payment history.
+Provide a temporary "Pay" button to simulate payment.
+Notify the administrator upon successful payment, marking the student's balance as paid.
+Tools:
+ReactJS for creating the UI.
+Firebase Firestore for fetching and updating balance data.
+5. Payment Integration (Placeholder)
+Design:
+Add a "Pay" button for each fee type in the student dashboard.
+Functionality:
+Temporarily simulate payment without actual payment gateway integration.
+Update Firebase with a payment status and trigger a notification to the admin.
+Tools:
+Firebase Cloud Functions to handle payment simulations and notifications.
+6. Receipt Generation
+Design:
+Simple layout to show payment details and confirmation.
+Functionality:
+Generate a receipt once the payment is processed.
+Allow students to download or print the receipt.
+Tools:
+React-PDF or similar libraries to create downloadable receipts.
+Firebase Storage to store receipts if needed.
+7. Deployment and Testing
+Local Deployment: Start by testing locally using tools like Postman and React DevTools.
+Cloud Deployment: Use Firebase Hosting to deploy the frontend, and Node.js with Firebase Functions for the backend.
+Testing: Focus on end-to-end testing using Cypress or similar tools to ensure everything works smoothly.
+8. Extra Features (If Time Permits)
+Advanced Payment Gateway Integration: Integrate with Gcash or another payment provider.
+Analytics Dashboard: Provide admin insights on overall payments and balances.
+Email Notifications: Send automated emails for payment reminders or confirmations.
+This structured approach should help you build a presentable and functional school payment system as your capstone project. If you have any specific questions or need further guidance on implementing any part of this plan, feel free to ask!
+
+https://chatgpt.com/c/63f8d9e5-1686-4644-bee6-8ff31a610688
+https://chatgpt.com/share/e/038fba11-52f7-4ebe-807a-a9bf34829d56

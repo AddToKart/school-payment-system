@@ -168,11 +168,13 @@ const AdminDashboard = ({ onLogout }) => {
     const newStudent = {
       studentNumber,
       name: studentName,
-      grade: studentGrade,
-      strand: studentStrand,
-      section: studentSection,
+      grade: grade,  // Ensure that the state value is passed
+      strand: strand,  // Ensure that the state value is passed
+      section: section,  // Ensure that the state value is passed
     };
-  
+
+    console.log('Adding student:', newStudent);  // Add logging to verify data
+
     try {
       if (isEditMode && studentId) {
         await updateStudentDetails(studentId, newStudent);
@@ -188,7 +190,7 @@ const AdminDashboard = ({ onLogout }) => {
     } catch (error) {
       console.error('Error adding or updating student:', error);
     }
-  };
+};
   
   const handleEditStudent = (student) => {
     setStudentId(student.id);
