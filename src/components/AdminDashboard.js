@@ -1,5 +1,7 @@
+// src/components/AdminDashboard.js
+
 import React, { useState, useEffect } from 'react';
-import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails } from '../services/adminServices';
+import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails, deleteStudent } from '../services/adminServices';
 import { Modal, Button, Form, Navbar, Nav } from 'react-bootstrap';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -79,16 +81,32 @@ const AdminDashboard = ({ onLogout }) => {
   }, [grade, strand, section]);
 
   const fetchStudents = async (grade, strand, section) => {
-    const studentList = await getStudentsBySection(grade, strand, section);
-    studentList.sort((a, b) => a.name.localeCompare(b.name));
-    setStudents(studentList);
-  };
+    try {
+        const studentList = await getStudentsBySection(grade, strand, section);
+        if (studentList.length === 0) {
+            console.log(`No students found for ${grade} ${strand} ${section}`);
+            setStudents([]); // Handle empty list
+        } else {
+            studentList.sort((a, b) => a.name.localeCompare(b.name));
+            setStudents(studentList);
+        }
+    } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]); // Ensure UI handles this gracefully
+    }
+};
+
+  
 
   const handleStudentClick = async (student) => {
-    const { balances, totalBalance } = await getStudentBalances(student.id);
-    setSelectedStudent(student);
-    setBalances(balances);
-    setTotalBalance(totalBalance);
+    try {
+      const { balances, totalBalance } = await getStudentBalances(student.id);
+      setSelectedStudent(student);
+      setBalances(balances);
+      setTotalBalance(totalBalance);
+    } catch (error) {
+      console.error('Error fetching student details:', error);
+    }
   };
 
   const handleGradeChange = (e) => {
@@ -116,10 +134,14 @@ const AdminDashboard = ({ onLogout }) => {
       amount: parseFloat(editAmount),
       status: editStatus
     };
-    await updateStudentBalance(selectedStudent.id, updatedBalances);
-    setBalances(updatedBalances);
-    setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
-    setEditIndex(null);
+    try {
+      await updateStudentBalance(selectedStudent.id, updatedBalances);
+      setBalances(updatedBalances);
+      setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
+      setEditIndex(null);
+    } catch (error) {
+      console.error('Error saving balance:', error);
+    }
   };
 
   const handleAddNewBalance = async () => {
@@ -129,14 +151,17 @@ const AdminDashboard = ({ onLogout }) => {
       status: 'Unpaid'
     };
 
-    await addNewBalance(selectedStudent.id, newBalance);
-
-    const updatedBalances = [...balances, newBalance];
-    setBalances(updatedBalances);
-    setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
-    setNewBalanceDescription('');
-    setNewBalanceAmount('');
-    setIsAddingBalance(false);
+    try {
+      await addNewBalance(selectedStudent.id, newBalance);
+      const updatedBalances = [...balances, newBalance];
+      setBalances(updatedBalances);
+      setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
+      setNewBalanceDescription('');
+      setNewBalanceAmount('');
+      setIsAddingBalance(false);
+    } catch (error) {
+      console.error('Error adding new balance:', error);
+    }
   };
 
   const handleAddStudent = async () => {
@@ -165,7 +190,6 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
   
-
   const handleEditStudent = (student) => {
     setStudentId(student.id);
     setStudentNumber(student.studentNumber);
@@ -176,6 +200,17 @@ const AdminDashboard = ({ onLogout }) => {
     setIsEditMode(true);
     setShowAddStudentModal(true);
   }
+
+  const handleDeleteStudent = async () => {
+    try {
+      await deleteStudent(studentId);
+      setShowAddStudentModal(false);
+      setSelectedStudent(null);
+      fetchStudents(grade, strand, section);
+    } catch (error) {
+      console.error('Error deleting student:', error);
+    }
+  };
 
   return (
     <div className="admin-dashboard-container">
@@ -250,12 +285,11 @@ const AdminDashboard = ({ onLogout }) => {
                 {student.name}
                 <button
                   className="btn-edit btn-sm"
-                   onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
-                    style={{ float: 'right', marginLeft: 'auto' }}
+                  onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                  style={{ float: 'right', marginLeft: 'auto' }}
                 >
-                    Edit Student
+                  Edit Student
                 </button>
-
               </li>
             ))}
           </ul>
@@ -396,6 +430,11 @@ const AdminDashboard = ({ onLogout }) => {
           <Button variant="primary" onClick={handleAddStudent}>
             {isEditMode ? 'Save Changes' : 'Add Student'}
           </Button>
+          {isEditMode && (
+            <Button variant="danger" onClick={handleDeleteStudent}>
+              Delete Student
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
     </div>

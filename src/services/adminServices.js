@@ -17,12 +17,18 @@ export const getAdminProfile = async (userId) => {
 export const getStudentsBySection = async (grade, strand, section) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/students/${grade}/${strand}/${section}`);
-    return response.data; // Handle empty arrays gracefully
+    return response.data;
   } catch (error) {
-    console.error('Error fetching students:', error);
-    return []; // Return an empty array to prevent frontend issues
+    if (error.response && error.response.status === 404) {
+      // Return an empty array if no students are found
+      return [];
+    } else {
+      console.error('Error fetching students:', error);
+      throw error;
+    }
   }
 };
+
 
 export const getStudentBalances = async (studentId) => {
   try {
@@ -69,6 +75,15 @@ export const updateStudentDetails = async (studentId, updatedStudent) => {
     await axios.put(`${API_BASE_URL}/students/${studentId}`, updatedStudent);
   } catch (error) {
     console.error('Error updating student:', error);
+    throw error;
+  }
+};
+
+export const deleteStudent = async (studentId) => {
+  try {
+    await axios.delete(`${API_BASE_URL}/students/${studentId}`);
+  } catch (error) {
+    console.error('Error deleting student:', error);
     throw error;
   }
 };

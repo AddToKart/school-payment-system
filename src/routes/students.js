@@ -5,11 +5,10 @@ const db = require('../firebase-admin');
 const router = express.Router();
 
 // Fetch students by section
+// Example modification in the students.js
 router.get('/students/:grade/:strand/:section', async (req, res) => {
   try {
       const { grade, strand, section } = req.params;
-      console.log('Received request to fetch students for:', { grade, strand, section });
-
       const studentsRef = db.collection('students');
       const snapshot = await studentsRef
           .where('grade', '==', grade)
@@ -18,8 +17,7 @@ router.get('/students/:grade/:strand/:section', async (req, res) => {
           .get();
 
       if (snapshot.empty) {
-          console.log('No students found for the provided filters');
-          return res.status(404).json({ message: 'No students found' });
+          return res.json([]); // Return empty array instead of 404
       }
 
       const students = [];
@@ -27,15 +25,12 @@ router.get('/students/:grade/:strand/:section', async (req, res) => {
           students.push({ id: doc.id, ...doc.data() });
       });
 
-      console.log('Students fetched successfully:', students);
       res.json(students);
   } catch (error) {
       console.error('Error while fetching students:', error.message);
       res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
 
 
 router.get('/test', (req, res) => {
@@ -192,6 +187,23 @@ router.put('/students/:id', async (req, res) => {
   }
 });
 
+router.delete('/students/:id', async (req, res) => {
+  try {
+      const { id } = req.params;
+      const studentRef = db.collection('students').doc(id);
+      const studentDoc = await studentRef.get();
+
+      if (!studentDoc.exists) {
+          return res.status(404).send('Student not found.');
+      }
+
+      await studentRef.delete();
+      res.status(200).send('Student deleted successfully.');
+  } catch (error) {
+      console.error('Error deleting student:', error);
+      res.status(500).send('Error deleting student: ' + error.message);
+  }
+});
 
 
 
