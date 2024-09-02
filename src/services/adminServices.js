@@ -63,3 +63,12 @@ export const addStudent = async (newStudent) => {
     throw error;
   }
 };
+
+export const updateStudentDetails = async (studentId, updatedStudent) => {
+  try {
+    await axios.put(`${API_BASE_URL}/students/${studentId}`, updatedStudent);
+  } catch (error) {
+    console.error('Error updating student:', error);
+    throw error;
+  }
+};

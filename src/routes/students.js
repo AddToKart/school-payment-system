@@ -178,6 +178,21 @@ router.get('/admins/:id/profile', async (req, res) => {
   }
 });
 
+router.put('/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedStudent = req.body;
+
+    await db.collection('students').doc(id).update(updatedStudent);
+
+    res.send('Student updated successfully.');
+  } catch (error) {
+    console.error('Error updating student:', error);
+    res.status(500).send('Error updating student: ' + error.message);
+  }
+});
+
+
 
 
 module.exports = router;

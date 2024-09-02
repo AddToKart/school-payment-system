@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent } from '../services/adminServices';
+import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails } from '../services/adminServices';
 import { Modal, Button, Form, Navbar, Nav } from 'react-bootstrap';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -9,9 +9,12 @@ import './AdminDashboard.css';
 const AdminDashboard = ({ onLogout }) => {
   const [authUser, setAuthUser] = useState(null);
   const [profile, setProfile] = useState({ name: '', profilePicture: '' });
-  const [grade, setGrade] = useState('Grade 11');
-  const [strand, setStrand] = useState('STEM');
-  const [section, setSection] = useState('Section 1');
+
+  // Load initial values from localStorage or default to 'Grade 11', 'STEM', 'Section 1'
+  const [grade, setGrade] = useState(localStorage.getItem('selectedGrade') || 'Grade 11');
+  const [strand, setStrand] = useState(localStorage.getItem('selectedStrand') || 'STEM');
+  const [section, setSection] = useState(localStorage.getItem('selectedSection') || 'Section 1');
+
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [balances, setBalances] = useState([]);
@@ -23,6 +26,9 @@ const AdminDashboard = ({ onLogout }) => {
   const [newBalanceAmount, setNewBalanceAmount] = useState('');
   const [isAddingBalance, setIsAddingBalance] = useState(false);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const [studentId, setStudentId] = useState(null);
   const [studentNumber, setStudentNumber] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState('Grade 11');
@@ -32,13 +38,6 @@ const AdminDashboard = ({ onLogout }) => {
   const strands = ['STEM', 'GAS', 'HUMSS', 'ICT', 'ABM'];
   const sections = ['Section 1', 'Section 2', 'Section 3'];
   const grades = ['Grade 11', 'Grade 12'];
-
-  useEffect(() => {
-    // Sync modal selections with main page selections
-    setStudentGrade(grade);
-    setStudentStrand(strand);
-    setStudentSection(section);
-  }, [grade, strand, section]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -71,17 +70,19 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
+  // Update localStorage whenever grade, strand, or section changes
   useEffect(() => {
+    localStorage.setItem('selectedGrade', grade);
+    localStorage.setItem('selectedStrand', strand);
+    localStorage.setItem('selectedSection', section);
     fetchStudents(grade, strand, section);
   }, [grade, strand, section]);
 
   const fetchStudents = async (grade, strand, section) => {
     const studentList = await getStudentsBySection(grade, strand, section);
-    // Sort students alphabetically by name
     studentList.sort((a, b) => a.name.localeCompare(b.name));
     setStudents(studentList);
-};
-
+  };
 
   const handleStudentClick = async (student) => {
     const { balances, totalBalance } = await getStudentBalances(student.id);
@@ -92,26 +93,14 @@ const AdminDashboard = ({ onLogout }) => {
 
   const handleGradeChange = (e) => {
     setGrade(e.target.value);
-    setStrand(strands[0]);
-    setSection(sections[0]);
-    setSelectedStudent(null);
-    setBalances([]);
-    setTotalBalance(0);
   };
 
   const handleStrandChange = (e) => {
     setStrand(e.target.value);
-    setSection(sections[0]);
-    setSelectedStudent(null);
-    setBalances([]);
-    setTotalBalance(0);
   };
 
   const handleSectionChange = (e) => {
     setSection(e.target.value);
-    setSelectedStudent(null);
-    setBalances([]);
-    setTotalBalance(0);
   };
 
   const handleEditBalance = (index) => {
@@ -156,24 +145,44 @@ const AdminDashboard = ({ onLogout }) => {
       name: studentName,
       grade: studentGrade,
       strand: studentStrand,
-      section: studentSection
+      section: studentSection,
     };
-
+  
     try {
-      await addStudent(newStudent);
+      if (isEditMode && studentId) {
+        await updateStudentDetails(studentId, newStudent);
+      } else {
+        await addStudent(newStudent);
+      }
       setShowAddStudentModal(false);
       fetchStudents(grade, strand, section);
+      setStudentId(null);
       setStudentNumber('');
       setStudentName('');
+      setIsEditMode(false);
     } catch (error) {
-      console.error('Error adding student:', error);
+      console.error('Error adding or updating student:', error);
     }
   };
+  
+
+  const handleEditStudent = (student) => {
+    setStudentId(student.id);
+    setStudentNumber(student.studentNumber);
+    setStudentName(student.name);
+    setStudentGrade(student.grade);
+    setStudentStrand(student.strand);
+    setStudentSection(student.section);
+    setIsEditMode(true);
+    setShowAddStudentModal(true);
+  }
 
   return (
     <div className="admin-dashboard-container">
       <Navbar bg="light" expand="lg" className="mb-4">
-        <Navbar.Brand href="#home">Admin Dashboard</Navbar.Brand>
+        <Navbar.Brand href="#home">
+          <img src="school-logo.png" alt="School Logo" className="school-logo" />
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Nav>
@@ -239,6 +248,14 @@ const AdminDashboard = ({ onLogout }) => {
                 onClick={() => handleStudentClick(student)}
               >
                 {student.name}
+                <button
+                  className="btn-edit btn-sm"
+                   onClick={(e) => { e.stopPropagation(); handleEditStudent(student); }}
+                    style={{ float: 'right', marginLeft: 'auto' }}
+                >
+                    Edit Student
+                </button>
+
               </li>
             ))}
           </ul>
@@ -305,10 +322,10 @@ const AdminDashboard = ({ onLogout }) => {
         </div>
       )}
 
-      {/* Add New Student Modal */}
+      {/* Add/Edit Student Modal */}
       <Modal show={showAddStudentModal} onHide={() => setShowAddStudentModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Add New Student</Modal.Title>
+          <Modal.Title>{isEditMode ? 'Edit Student' : 'Add New Student'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -377,7 +394,7 @@ const AdminDashboard = ({ onLogout }) => {
             Close
           </Button>
           <Button variant="primary" onClick={handleAddStudent}>
-            Add Student
+            {isEditMode ? 'Save Changes' : 'Add Student'}
           </Button>
         </Modal.Footer>
       </Modal>

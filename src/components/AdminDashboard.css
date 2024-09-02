@@ -176,3 +176,57 @@ button {
       font-size: 1.5rem;
   }
 }
+
+/* Add this to AdminDashboard.css */
+@media (max-width: 600px) {
+  .navbar-brand img {
+    width: 100px;
+  }
+
+  .card-body {
+    padding: 10px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .list-group-item {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    font-size: 0.8rem;
+  }
+
+  .modal-body {
+    padding: 10px;
+  }
+
+  .modal-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* Add this to AdminDashboard.css */
+
+.btn-edit {
+  background-color: #ff9800; /* Orange background */
+  color: white; /* White text */
+  border: none; /* Remove border */
+  padding: 8px 16px; /* Add some padding */
+  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.btn-edit:hover {
+  background-color: #e68900; /* Darker orange on hover */
+  transform: scale(1.05); /* Slightly enlarge the button on hover */
+}
+
+.btn-edit:focus {
+  outline: none; /* Remove focus outline */
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.4); /* Add a focus ring */
+}
