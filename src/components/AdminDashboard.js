@@ -84,9 +84,12 @@ const AdminDashboard = ({ onLogout }) => {
         console.log(`No students found for ${grade} ${strand} ${section}`);
         setStudents({ unpaid: [], paid: [] });
       } else {
-        const studentsWithBalance = studentList.filter(student => student.hasOutstandingBalance);
-        const studentsWithoutBalance = studentList.filter(student => !student.hasOutstandingBalance);
-        setStudents({ unpaid: studentsWithBalance, paid: studentsWithoutBalance });
+        const unpaidStudents = studentList.filter((student) => {
+          const hasUnpaidBalance = student.balances.some((balance) => balance.status === 'Unpaid');
+          return hasUnpaidBalance;
+        });
+        const paidStudents = studentList.filter((student) => !unpaidStudents.includes(student));
+        setStudents({ unpaid: unpaidStudents, paid: paidStudents });
       }
     } catch (error) {
       console.error('Error fetching students:', error);
