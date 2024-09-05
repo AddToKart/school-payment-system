@@ -211,7 +211,7 @@ button {
 /* Add this to AdminDashboard.css */
 
 .btn-edit {
-  background-color: #ff9800; /* Orange background */
+  background-color: #0088f7; /* Orange background */
   color: white; /* White text */
   border: none; /* Remove border */
   padding: 8px 16px; /* Add some padding */
@@ -222,7 +222,7 @@ button {
 }
 
 .btn-edit:hover {
-  background-color: #e68900; /* Darker orange on hover */
+  background-color: #0300c9; /* Darker orange on hover */
   transform: scale(1.05); /* Slightly enlarge the button on hover */
 }
 
@@ -230,3 +230,85 @@ button {
   outline: none; /* Remove focus outline */
   box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.4); /* Add a focus ring */
 }
+
+/* Add more font sizes and line heights to create a better visual hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+/* Add more contrast to the color scheme */
+.primary-color { color: #0d47a1; }
+.secondary-color { color: #ff9800; }
+
+/* Add more visual interest to buttons */
+.btn {
+  padding: 12px 25px;
+  font-size: 1.1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+  background-color: #0b3c91;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.4);
+}
+
+/* Add more visual interest to cards */
+.card {
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  border: none;
+  padding: 20px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  color: #0d47a1;
+  margin-bottom: 20px;
+}
+
+/* Add more visual interest to the navbar */
+.navbar {
+  margin-bottom: 20px;
+  background-color: #0d47a1;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.school-logo {
+  max-width: 50px; /* adjust the max width to your liking */
+  height: auto;
+  margin: 10px; /* add some margin to center the logo */
+}
+

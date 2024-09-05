@@ -5,6 +5,7 @@ import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getAdminProfile } from '../services/adminServices';
 import './AdminDashboard.css';
+import schoolLogo from './images/school-logo.png'
 
 const AdminDashboard = ({ onLogout }) => {
   const [authUser, setAuthUser] = useState(null);
@@ -258,7 +259,7 @@ const AdminDashboard = ({ onLogout }) => {
     <div className="admin-dashboard-container">
       <Navbar bg="light" expand="lg" className="mb-4">
         <Navbar.Brand href="#home">
-          <img src="school-logo.png" alt="School Logo" className="school-logo" />
+         <img src={schoolLogo}  alt="ICP" className="school-logo" />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
