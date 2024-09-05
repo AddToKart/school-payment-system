@@ -272,7 +272,7 @@ const AdminDashboard = ({ onLogout }) => {
               />
               {profile.name || 'Admin'}
             </Nav.Link>
-            <Button variant="outline-danger" onClick={handleLogout}>Logout</Button>
+            <Button variant="outline-danger" onClick={handleLogout} className="logout-button">Logout</Button>
           </Nav>
         </Navbar.Collapse>
       </Navbar>
