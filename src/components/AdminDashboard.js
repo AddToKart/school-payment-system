@@ -5,7 +5,7 @@ import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getAdminProfile } from '../services/adminServices';
 import './AdminDashboard.css';
-import schoolLogo from './images/school-logo.png'
+import schoolLogo from './images/school-logo.png';
 
 const AdminDashboard = ({ onLogout }) => {
   const [authUser, setAuthUser] = useState(null);
@@ -34,6 +34,8 @@ const AdminDashboard = ({ onLogout }) => {
   const [studentGrade, setStudentGrade] = useState('Grade 11');
   const [studentStrand, setStudentStrand] = useState('STEM');
   const [studentSection, setStudentSection] = useState('Section 1');
+
+  const [error, setError] = useState(null); // Add error state for duplicate students
 
   const strands = ['STEM', 'GAS', 'HUMSS', 'ICT', 'ABM'];
   const sections = ['Section 1', 'Section 2', 'Section 3'];
@@ -134,12 +136,12 @@ const AdminDashboard = ({ onLogout }) => {
       amount: parseFloat(editAmount),
       status: editStatus
     };
-  
+
     if (isNaN(updatedBalances[index].amount)) {
       console.error('Invalid balance amount');
       return;
     }
-  
+
     try {
       await updateStudentBalance(selectedStudent.id, updatedBalances);
       setBalances(updatedBalances);
@@ -157,12 +159,12 @@ const AdminDashboard = ({ onLogout }) => {
       amount: parseFloat(newBalanceAmount),
       status: 'Unpaid'
     };
-  
+
     if (isNaN(newBalance.amount)) {
       console.error('Invalid balance amount');
       return;
     }
-  
+
     try {
       await addNewBalance(selectedStudent.id, newBalance);
       const updatedBalances = [...balances, newBalance];
@@ -185,31 +187,30 @@ const AdminDashboard = ({ onLogout }) => {
       strand: studentStrand,
       section: studentSection,
     };
-  
+
     try {
       if (isEditMode && studentId) {
+        // If editing, just update the student details without checking for duplicates
         await updateStudentDetails(studentId, newStudent);
-        // Update the students state with the new section, grade, and strand
-        const updatedStudents = { ...students };
-        const studentIndex = updatedStudents.unpaid.findIndex((student) => student.id === studentId);
-        if (studentIndex !== -1) {
-          updatedStudents.unpaid[studentIndex] = { ...updatedStudents.unpaid[studentIndex], ...newStudent };
-        } else {
-          const studentIndex = updatedStudents.paid.findIndex((student) => student.id === studentId);
-          if (studentIndex !== -1) {
-            updatedStudents.paid[studentIndex] = { ...updatedStudents.paid[studentIndex], ...newStudent };
-          }
-        }
-        setStudents(updatedStudents);
+        setShowAddStudentModal(false);
+        fetchStudents(grade, strand, section);
+        setIsEditMode(false);
       } else {
-        await addStudent(newStudent);
+        // If adding a new student, check for duplicates
+        const result = await addStudent(newStudent);
+
+        if (result.success === false) {
+          setError(result.message); // Show error if the student already exists
+        } else {
+          setShowAddStudentModal(false);
+          fetchStudents(grade, strand, section);
+          setError(null); // Clear any previous error
+        }
       }
-      setShowAddStudentModal(false);
-      fetchStudents(grade, strand, section);
+
       setStudentId(null);
       setStudentNumber('');
       setStudentName('');
-      setIsEditMode(false);
     } catch (error) {
       console.error('Error adding or updating student:', error);
     }
@@ -491,6 +492,7 @@ const AdminDashboard = ({ onLogout }) => {
                 ))}
               </Form.Control>
             </Form.Group>
+            {error && <p className="text-danger">{error}</p>} {/* Display error message */}
           </Form>
         </Modal.Body>
         <Modal.Footer>
