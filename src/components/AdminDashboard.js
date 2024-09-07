@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails, deleteStudent } from '../services/adminServices';
-import { Modal, Button, Form, Navbar, Nav } from 'react-bootstrap';
+import { Modal, Button, Form, Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getAdminProfile } from '../services/adminServices';
@@ -16,6 +16,7 @@ const AdminDashboard = ({ onLogout }) => {
   const [section, setSection] = useState(localStorage.getItem('selectedSection') || 'Section 1');
 
   const [students, setStudents] = useState({ unpaid: [], paid: [] });
+  const [searchResults, setSearchResults] = useState([]); // For search results dropdown
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [balances, setBalances] = useState([]);
   const [totalBalance, setTotalBalance] = useState(0);
@@ -35,7 +36,8 @@ const AdminDashboard = ({ onLogout }) => {
   const [studentStrand, setStudentStrand] = useState('STEM');
   const [studentSection, setStudentSection] = useState('Section 1');
 
-  const [error, setError] = useState(null); // Add error state for duplicate students
+  const [searchTerm, setSearchTerm] = useState(''); // Search input state
+  const [error, setError] = useState(null);
 
   const strands = ['STEM', 'GAS', 'HUMSS', 'ICT', 'ABM'];
   const sections = ['Section 1', 'Section 2', 'Section 3'];
@@ -86,6 +88,7 @@ const AdminDashboard = ({ onLogout }) => {
       if (studentList.length === 0) {
         console.log(`No students found for ${grade} ${strand} ${section}`);
         setStudents({ unpaid: [], paid: [] });
+        setSearchResults([]); // Clear search results
       } else {
         const unpaidStudents = studentList.filter((student) => {
           const hasUnpaidBalance = student.balances.some((balance) => balance.status === 'Unpaid');
@@ -97,10 +100,32 @@ const AdminDashboard = ({ onLogout }) => {
     } catch (error) {
       console.error('Error fetching students:', error);
       setStudents({ unpaid: [], paid: [] });
+      setSearchResults([]);
     }
   };
 
+  // Function to handle search input and filter the students
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value; // Allow upper and lower case input
+    setSearchTerm(searchTerm);
+
+    // Combine both unpaid and paid students for search
+    const allStudents = [...students.unpaid, ...students.paid];
+
+    // Filter students based on search term
+    const results = allStudents.filter(student => 
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      student.studentNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setSearchResults(results); // Update search results dropdown
+  };
+
   const handleStudentClick = async (student) => {
+    setGrade(student.grade);
+    setStrand(student.strand);
+    setSection(student.section);
+
     try {
       const { balances, totalBalance } = await getStudentBalances(student.id);
       setSelectedStudent(student);
@@ -190,21 +215,19 @@ const AdminDashboard = ({ onLogout }) => {
 
     try {
       if (isEditMode && studentId) {
-        // If editing, just update the student details without checking for duplicates
         await updateStudentDetails(studentId, newStudent);
         setShowAddStudentModal(false);
         fetchStudents(grade, strand, section);
         setIsEditMode(false);
       } else {
-        // If adding a new student, check for duplicates
         const result = await addStudent(newStudent);
 
         if (result.success === false) {
-          setError(result.message); // Show error if the student already exists
+          setError(result.message);
         } else {
           setShowAddStudentModal(false);
           fetchStudents(grade, strand, section);
-          setError(null); // Clear any previous error
+          setError(null);
         }
       }
 
@@ -228,9 +251,9 @@ const AdminDashboard = ({ onLogout }) => {
   };
 
   const openAddStudentModal = () => {
-    setStudentGrade(grade); // Sync with selected grade on the main page
-    setStudentStrand(strand); // Sync with selected strand on the main page
-    setStudentSection(section); // Sync with selected section on the main page
+    setStudentGrade(grade); 
+    setStudentStrand(strand); 
+    setStudentSection(section); 
     setStudentNumber('');
     setStudentName('');
     setIsEditMode(false);
@@ -277,6 +300,27 @@ const AdminDashboard = ({ onLogout }) => {
           </Nav>
         </Navbar.Collapse>
       </Navbar>
+
+      {/* Search Input */}
+      <div className="search-bar">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Search by Student Name or Number"
+          value={searchTerm}
+          onChange={handleSearchChange}
+        />
+        {/* Search Results Dropdown */}
+        {searchResults.length > 0 && (
+          <Dropdown.Menu show className="w-100">
+            {searchResults.map((student) => (
+              <Dropdown.Item key={student.id} onClick={() => handleStudentClick(student)}>
+                {student.name} ({student.studentNumber}) - {student.grade} {student.strand} {student.section}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        )}
+      </div>
 
       <div className="card">
         <div className="card-body">
