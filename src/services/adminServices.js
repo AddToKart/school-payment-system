@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
 
 const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5000/api';
 
@@ -58,7 +59,13 @@ export const getStudentBalances = async (studentId) => {
 /* Update student balance */
 export const updateStudentBalance = async (studentId, updatedBalances) => {
   try {
-    await axios.post(`${apiBaseUrl}/students/${studentId}/balances`, { updatedBalances });
+    // Add the id property to each balance object in the updatedBalances array
+    updatedBalances.forEach((balance) => {
+      balance.id = uuidv4();
+    });
+
+    // Update the student's balances array
+    await axios.put(`${apiBaseUrl}/students/${studentId}/balances`, { updatedBalances });
     return { success: true, message: 'Balances updated successfully.' };
   } catch (error) {
     handleAxiosError(error);
@@ -68,12 +75,30 @@ export const updateStudentBalance = async (studentId, updatedBalances) => {
 /* Add a new balance for a student */
 export const addNewBalance = async (studentId, newBalance) => {
   try {
-    await axios.post(`${apiBaseUrl}/students/${studentId}/balance`, newBalance);
-    return { success: true, message: 'New balance added successfully.' };
+    // Generate a unique balance ID
+    const balanceId = uuidv4();
+    newBalance._id = balanceId; // Use _id instead of id
+
+    // Add the new balance to the student's balances array
+    const response = await axios.post(`${apiBaseUrl}/students/${studentId}/balances`, newBalance);
+    return response.data;
   } catch (error) {
     handleAxiosError(error);
   }
 };
+
+/* Delete a specific balance for a student */
+export const deleteStudentBalance = async (studentId, balanceId) => {
+  try {
+    // Ensure the endpoint includes both the studentId and balanceId
+    await axios.delete(`${apiBaseUrl}/students/${studentId}/balances/${balanceId}`);
+    return { success: true, message: 'Balance deleted successfully.' };
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+
 
 /* Add a new student */
 export const addStudent = async (newStudent) => {
@@ -120,3 +145,22 @@ export const deleteStudent = async (studentId) => {
     handleAxiosError(error);
   }
 };
+
+
+
+/* Fetch all students globally */
+export const getAllStudents = async () => {
+  const response = await axios.get(`${apiBaseUrl}/students`);
+  return response.data;
+};
+
+/* NEW: Update balance description */
+export const updateBalanceDescription = async (studentId, balanceId, newDescription) => {
+  try {
+    await axios.put(`${apiBaseUrl}/students/${studentId}/balances/${balanceId}`, { description: newDescription });
+    return { success: true, message: 'Balance description updated successfully.' };
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+

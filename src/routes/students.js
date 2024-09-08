@@ -82,24 +82,27 @@ router.get('/students/:id/balances', async (req, res) => {
 });
 
 // Update student balances
-router.post('/students/:id/balances', async (req, res) => {
+router.put('/:id/balances/:balanceId', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { updatedBalances } = req.body;
+    const studentId = req.params.id;
+    const balanceId = req.params.balanceId;
+    const updatedBalance = req.body;
 
-    if (!updatedBalances) {
-      return res.status(400).json({ error: 'Invalid request', message: 'Updated balances are required' });
-    }
-
-    const studentRef = db.collection('students').doc(id);
-    await studentRef.update({
-      balances: updatedBalances,
+    // Update the balance in the database
+    const student = await Student.findByIdAndUpdate(studentId, {
+      $set: { 'balances.$[balance].amount': updatedBalance.amount },
+    }, {
+      arrayFilters: [{ 'balance._id': balanceId }],
     });
 
-    res.send('Balances updated successfully.');
+    if (!student) {
+      return res.status(404).send({ message: 'Student not found' });
+    }
+
+    res.send({ message: 'Balance updated successfully' });
   } catch (error) {
-    console.error('Error updating balances:', error);
-    res.status(500).json({ error: 'Error updating balances', message: error.message });
+    console.error(error);
+    res.status(500).send({ message: 'Error updating balance' });
   }
 });
 
@@ -208,6 +211,73 @@ router.delete('/students/:id', async (req, res) => {
   }
 });
 
+// Fetch all students globally
+router.get('/students', async (req, res) => {
+  try {
+    const studentsRef = db.collection('students');
+    const snapshot = await studentsRef.get();
+
+    if (snapshot.empty) {
+      return res.json([]); // Return an empty array if no students found
+    }
+
+    const students = [];
+    snapshot.forEach((doc) => {
+      students.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.json(students); // Return all students globally
+  } catch (error) {
+    console.error('Error while fetching all students:', error.message);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
+// Fetch all students globally
+router.get('/students', async (req, res) => {
+  try {
+    const studentsRef = db.collection('students');
+    const snapshot = await studentsRef.get();
+
+    if (snapshot.empty) {
+      return res.json([]); // Return an empty array if no students found
+    }
+
+    const students = [];
+    snapshot.forEach((doc) => {
+      students.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.json(students); // Return all students globally
+  } catch (error) {
+    console.error('Error while fetching all students:', error.message);
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
+});
+
+// DELETE a specific balance for a student
+router.delete('/students/:id/balances/:balanceId', async (req, res) => {
+  try {
+    const { id, balanceId } = req.params;
+
+    const studentRef = db.collection('students').doc(id);
+    const doc = await studentRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).send('Student not found.');
+    }
+
+    let balances = doc.data().balances || [];
+    balances = balances.filter(balance => balance.id !== balanceId);
+
+    await studentRef.update({ balances });
+
+    res.send('Balance deleted successfully.');
+  } catch (error) {
+    console.error('Error deleting balance:', error);
+    res.status(500).send('Error deleting balance: ' + error.message);
+  }
+});
 
 
 module.exports = router;

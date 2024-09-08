@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { getStudentsBySection, getStudentBalances, updateStudentBalance, addNewBalance, addStudent, updateStudentDetails, deleteStudent } from '../services/adminServices';
+import { 
+  getStudentsBySection, 
+  getStudentBalances, 
+  updateStudentBalance, 
+  addNewBalance, 
+  addStudent, 
+  updateStudentDetails, 
+  deleteStudent, 
+  getAllStudents, 
+  deleteStudentBalance // New function to delete unpaid balance
+} from '../services/adminServices';
 import { Modal, Button, Form, Navbar, Nav, Dropdown } from 'react-bootstrap';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -16,6 +26,7 @@ const AdminDashboard = ({ onLogout }) => {
   const [section, setSection] = useState(localStorage.getItem('selectedSection') || 'Section 1');
 
   const [students, setStudents] = useState({ unpaid: [], paid: [] });
+  const [allStudents, setAllStudents] = useState([]); // Global state to store all students
   const [searchResults, setSearchResults] = useState([]); // For search results dropdown
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [balances, setBalances] = useState([]);
@@ -23,6 +34,7 @@ const AdminDashboard = ({ onLogout }) => {
   const [editIndex, setEditIndex] = useState(null);
   const [editAmount, setEditAmount] = useState('');
   const [editStatus, setEditStatus] = useState('');
+  const [editDescription, setEditDescription] = useState(''); // New state for editing balance description
   const [newBalanceDescription, setNewBalanceDescription] = useState('');
   const [newBalanceAmount, setNewBalanceAmount] = useState('');
   const [isAddingBalance, setIsAddingBalance] = useState(false);
@@ -36,7 +48,8 @@ const AdminDashboard = ({ onLogout }) => {
   const [studentStrand, setStudentStrand] = useState('STEM');
   const [studentSection, setStudentSection] = useState('Section 1');
 
-  const [searchTerm, setSearchTerm] = useState(''); // Search input state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [error, setError] = useState(null);
 
   const strands = ['STEM', 'GAS', 'HUMSS', 'ICT', 'ABM'];
@@ -86,53 +99,66 @@ const AdminDashboard = ({ onLogout }) => {
     try {
       const studentList = await getStudentsBySection(grade, strand, section);
       if (studentList.length === 0) {
-        console.log(`No students found for ${grade} ${strand} ${section}`);
         setStudents({ unpaid: [], paid: [] });
-        setSearchResults([]); // Clear search results
+        setSearchResults([]);
       } else {
         const unpaidStudents = studentList.filter((student) => {
-          const hasUnpaidBalance = student.balances.some((balance) => balance.status === 'Unpaid');
-          return hasUnpaidBalance;
+          return student.balances.some((balance) => balance.status === 'Unpaid');
         });
         const paidStudents = studentList.filter((student) => !unpaidStudents.includes(student));
         setStudents({ unpaid: unpaidStudents, paid: paidStudents });
       }
     } catch (error) {
-      console.error('Error fetching students:', error);
       setStudents({ unpaid: [], paid: [] });
       setSearchResults([]);
     }
   };
 
-  // Function to handle search input and filter the students
+  // Fetch all students for global search
+  useEffect(() => {
+    const fetchAllStudents = async () => {
+      try {
+        const allStudentData = await getAllStudents();
+        setAllStudents(allStudentData);
+      } catch (error) {
+        console.error('Error fetching all students:', error);
+      }
+    };
+    fetchAllStudents();
+  }, []);
+
   const handleSearchChange = (e) => {
-    const searchTerm = e.target.value; // Allow upper and lower case input
+    const searchTerm = e.target.value; 
     setSearchTerm(searchTerm);
 
-    // Combine both unpaid and paid students for search
-    const allStudents = [...students.unpaid, ...students.paid];
-
-    // Filter students based on search term
     const results = allStudents.filter(student => 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       student.studentNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    setSearchResults(results); // Update search results dropdown
+    setSearchResults(results);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownVisible(!isDropdownVisible); 
   };
 
   const handleStudentClick = async (student) => {
-    setGrade(student.grade);
-    setStrand(student.strand);
-    setSection(student.section);
-
-    try {
-      const { balances, totalBalance } = await getStudentBalances(student.id);
-      setSelectedStudent(student);
-      setBalances(balances);
-      setTotalBalance(totalBalance);
-    } catch (error) {
-      console.error('Error fetching student details:', error);
+    if (selectedStudent && selectedStudent.id === student.id) {
+      setSelectedStudent(null); // Unselect the student
+    } else {
+      setGrade(student.grade);
+      setStrand(student.strand);
+      setSection(student.section);
+  
+      try {
+        const { balances, totalBalance } = await getStudentBalances(student.id);
+        setSelectedStudent(student);
+        setBalances(balances);
+        setTotalBalance(totalBalance);
+      } catch (error) {
+        console.error('Error fetching student details:', error);
+      }
     }
   };
 
@@ -152,6 +178,7 @@ const AdminDashboard = ({ onLogout }) => {
     setEditIndex(index);
     setEditAmount(balances[index].amount);
     setEditStatus(balances[index].status);
+    setEditDescription(balances[index].description);
   };
 
   const handleSaveBalance = async (index) => {
@@ -159,11 +186,11 @@ const AdminDashboard = ({ onLogout }) => {
     updatedBalances[index] = {
       ...updatedBalances[index],
       amount: parseFloat(editAmount),
-      status: editStatus
+      status: editStatus,
+      description: editDescription 
     };
 
     if (isNaN(updatedBalances[index].amount)) {
-      console.error('Invalid balance amount');
       return;
     }
 
@@ -172,7 +199,6 @@ const AdminDashboard = ({ onLogout }) => {
       setBalances(updatedBalances);
       setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
       setEditIndex(null);
-      fetchStudents(grade, strand, section);
     } catch (error) {
       console.error('Error saving balance:', error);
     }
@@ -180,13 +206,13 @@ const AdminDashboard = ({ onLogout }) => {
 
   const handleAddNewBalance = async () => {
     const newBalance = {
+      id: `balance_${Date.now()}`, // Adding a unique ID to the new balance
       description: newBalanceDescription,
       amount: parseFloat(newBalanceAmount),
       status: 'Unpaid'
     };
 
     if (isNaN(newBalance.amount)) {
-      console.error('Invalid balance amount');
       return;
     }
 
@@ -198,9 +224,26 @@ const AdminDashboard = ({ onLogout }) => {
       setNewBalanceDescription('');
       setNewBalanceAmount('');
       setIsAddingBalance(false);
-      fetchStudents(grade, strand, section);
     } catch (error) {
       console.error('Error adding new balance:', error);
+    }
+  };
+
+  const handleDeleteBalance = async (index) => {
+    const balanceToDelete = balances[index];
+    
+    if (!balanceToDelete.id) { // Ensure balanceId exists
+      console.error('Balance does not have an id:', balanceToDelete);
+      return;
+    }
+  
+    try {
+      await deleteStudentBalance(selectedStudent.id, balanceToDelete.id); // Use balanceToDelete.id
+      const updatedBalances = balances.filter((_, i) => i !== index);
+      setBalances(updatedBalances);
+      setTotalBalance(updatedBalances.filter(b => b.status === 'Unpaid').reduce((sum, b) => sum + b.amount, 0));
+    } catch (error) {
+      console.error('Error deleting balance:', error);
     }
   };
 
@@ -283,7 +326,7 @@ const AdminDashboard = ({ onLogout }) => {
     <div className="admin-dashboard-container">
       <Navbar bg="light" expand="lg" className="mb-4">
         <Navbar.Brand href="#home">
-         <img src={schoolLogo}  alt="ICP" className="school-logo" />
+         <img src={schoolLogo} alt="ICP" className="school-logo" />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
@@ -310,8 +353,11 @@ const AdminDashboard = ({ onLogout }) => {
           value={searchTerm}
           onChange={handleSearchChange}
         />
-        {/* Search Results Dropdown */}
-        {searchResults.length > 0 && (
+        <button className="btn btn-primary" onClick={toggleDropdown}>
+          Toggle Search Results
+        </button>
+
+        {isDropdownVisible && searchResults.length > 0 && (
           <Dropdown.Menu show className="w-100">
             {searchResults.map((student) => (
               <Dropdown.Item key={student.id} onClick={() => handleStudentClick(student)}>
@@ -424,16 +470,25 @@ const AdminDashboard = ({ onLogout }) => {
                   {editIndex === index ? (
                     <div className="form-inline">
                       <input
+                        type="text"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        className="form-control mr-2"
+                        placeholder="Description"
+                      />
+                      <input
                         type="number"
                         value={editAmount}
                         onChange={(e) => setEditAmount(e.target.value)}
                         className="form-control mr-2"
+                        placeholder="Amount"
                       />
                       <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="form-control mr-2">
                         <option value="Unpaid">Unpaid</option>
                         <option value="Paid">Paid</option>
                       </select>
                       <button onClick={() => handleSaveBalance(index)} className="btn btn-primary">Save</button>
+                      <button onClick={() => handleDeleteBalance(index)} className="btn btn-danger ml-2">Delete</button>
                     </div>
                   ) : (
                     <div className="d-flex justify-content-between">
