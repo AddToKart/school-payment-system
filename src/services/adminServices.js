@@ -80,7 +80,7 @@ export const addNewBalance = async (studentId, newBalance) => {
     newBalance._id = balanceId; // Use _id instead of id
 
     // Add the new balance to the student's balances array
-    const response = await axios.post(`${apiBaseUrl}/students/${studentId}/balances`, newBalance);
+    const response = await axios.post(`${apiBaseUrl}/students/${studentId}/balance`, newBalance);
     return response.data;
   } catch (error) {
     handleAxiosError(error);

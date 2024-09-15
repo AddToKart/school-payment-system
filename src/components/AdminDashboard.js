@@ -232,9 +232,9 @@ const AdminDashboard = ({ onLogout }) => {
   const handleDeleteBalance = async (index) => {
     const balanceToDelete = balances[index];
     
-    if (!balanceToDelete.id) { // Ensure balanceId exists
+    if (!balanceToDelete.id) {
       console.error('Balance does not have an id:', balanceToDelete);
-      return;
+      return;  // Exit if the balance does not have an ID
     }
   
     try {

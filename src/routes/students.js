@@ -122,7 +122,12 @@ router.post('/students/:id/balance', async (req, res) => {
     }
 
     const balances = doc.data().balances || [];
-    balances.push({ description, amount, status });
+    
+    // Generate a unique ID for each balance
+    const balanceId = `balance_${Date.now()}`;
+
+    // Push the new balance with an ID
+    balances.push({ id: balanceId, description, amount, status });
 
     await studentRef.update({ balances });
 
@@ -268,6 +273,7 @@ router.delete('/students/:id/balances/:balanceId', async (req, res) => {
     }
 
     let balances = doc.data().balances || [];
+    // Remove the balance with the given id
     balances = balances.filter(balance => balance.id !== balanceId);
 
     await studentRef.update({ balances });
